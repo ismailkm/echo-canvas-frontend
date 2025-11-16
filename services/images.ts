@@ -1,8 +1,15 @@
 import { Session } from '@/types/sessions';
 
-export async function generateImage(text_prompt: string):  Promise<Session> {
+export async function generateImage(input: { text_prompt?: string; audioBlob?: Blob }): Promise<Session> {
   const formData = new FormData();
-  formData.append('text_prompt', text_prompt);
+
+  if (input.audioBlob) {
+    formData.append('audio_file', input.audioBlob, 'audio.webm');
+  } else if (input.text_prompt) {
+    formData.append('text_prompt', input.text_prompt);
+  } else {
+    throw new Error('Either text_prompt or audioBlob must be provided');
+  }
 
   const response = await fetch('/api/generate-image', {
     method: 'POST',

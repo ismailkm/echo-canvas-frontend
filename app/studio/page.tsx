@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import CanvasArea from '@/components/studio/CanvasArea';
 import VersionHistory from '@/components/studio/VersionHistory';
 import { Version, Session } from '@/types/sessions';
 import MetadataDisplay from '@/components/studio/MetadataDisplay';
 import Loader from '@/components/common/Loader';
-import { describeImage, updateImage, refineImage } from '@/services/images';
+import { describeImage, updateImage, refineImage, generateImage } from '@/services/images';
 import { getSession } from '@/services/sessions';
 import { processSessionData } from '@/utils/session';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAudioStore } from '@/lib/stores/audioStore';
 import DescriptionModal from '@/components/studio/DescriptionModal';
 import InstructionModal from '@/components/studio/InstructionModal';
 import { Speaker, Stars, Pencil, Plus } from 'lucide-react';
@@ -20,6 +21,7 @@ function StudioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTextPrompt = searchParams.get('text_prompt');
+  const { audioBlob, clearAudioBlob } = useAudioStore();
 
   const [session, setSession] = useState<Session | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
@@ -31,6 +33,9 @@ function StudioContent() {
   const [isReimagining, setIsReimagining] = useState<boolean>(false);
   const [isRefineModalOpen, setIsRefineModalOpen] = useState<boolean>(false);
   const [isRefining, setIsRefining] = useState<boolean>(false);
+
+  // Use ref to track if we've already fetched data
+  const hasFetched = useRef(false);
 
   const handleImageUpdate = (newVersion: Version) => {
     setSelectedVersion(newVersion);
@@ -121,28 +126,63 @@ function StudioContent() {
   };
 
   useEffect(() => {
-    console.log('StudioPage useEffect');
+    console.log('StudioPage useEffect - Running fetchData');
+    
+    // Prevent double API calls
+    if (hasFetched.current) {
+      console.log('Already fetched data, skipping');
+      return;
+    }
+    
+    if (!initialTextPrompt && !audioBlob) {
+      console.log('No initial text prompt or audio, skipping fetch');
+      return;
+    }
+
     const fetchData = async () => {
-      if (initialTextPrompt) {
-        try {
-            // const sessionData = await generateImage(initialTextPrompt);
-            const sessionData = await getSession('57a7ab0f-e1b3-43c7-be27-f4e26e45e50d');
-            const { transformedVersions, initialSelectedVersion } = processSessionData(sessionData);
-            setSession(sessionData);
-            setVersions(transformedVersions);
-            setSelectedVersion(initialSelectedVersion);
-        } catch (error) {
-            console.error('Error fetching session:', error);
-            router.push('/canvas');
+      hasFetched.current = true;
+      console.log('Fetching session data...');
+      
+      try {
+        let sessionData;
+        if (audioBlob) {
+          console.log('Generating image from audio blob');
+          sessionData = await generateImage({ audioBlob });
+        } else if (initialTextPrompt) {
+          console.log('Generating image from text prompt:', initialTextPrompt);
+          sessionData = await generateImage({ text_prompt: initialTextPrompt });
+        } else {
+          router.push('/canvas');
+          return;
         }
+        
+        console.log('Session data received:', sessionData);
+        const { transformedVersions, initialSelectedVersion } = processSessionData(sessionData);
+        setSession(sessionData);
+        setVersions(transformedVersions);
+        setSelectedVersion(initialSelectedVersion);
+        
+        // Clear audio blob after successful generation
+        if (audioBlob) {
+          clearAudioBlob();
+        }
+        
+        console.log('Data set successfully');
+      } catch (error) {
+        console.error('Error fetching session:', error);
+        router.push('/canvas');
       }
     };
 
     fetchData();
-  }, [initialTextPrompt, router]);
+  }, [initialTextPrompt, audioBlob, router, clearAudioBlob]);
 
-  if (!session || !selectedVersion || !versions) {
-    return <Loader />;
+  if (!session || !selectedVersion || versions.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#1C1C1E] flex items-center justify-center">
+        <Loader />
+      </div>
+    );
   }
 
   return (

@@ -6,10 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface SpeakingOrbProps {
   isTextFocused: boolean;
-  onSpeechRecognized: (text: string) => void;
+
+  onAudioCaptured: (blob: Blob) => void;
 }
 
-const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onSpeechRecognized }) => {
+const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onAudioCaptured }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [analyserData, setAnalyserData] = useState<Uint8Array | null>(null);
 
@@ -17,9 +18,9 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onSpeechRecogn
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const orbRef = useRef<HTMLDivElement>(null);
-  const currentRecognitionRef = useRef<any>(null);
-  const currentTranscriptRef = useRef<string>('');
+
 
   // Initialize audio context and analyser
   const initializeAudio = async () => {
@@ -39,6 +40,9 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onSpeechRecogn
 
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
 
       return audioContext;
     } catch (err) {
@@ -51,38 +55,15 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onSpeechRecogn
   const handleOrbPress = async () => {
     if (isRecording) return;
 
+    audioChunksRef.current = [];
+
     const audio = await initializeAudio();
     if (!audio) return;
 
     setIsRecording(true);
     mediaRecorderRef.current?.start();
 
-    // Start speech recognition
-    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
 
-      recognition.onresult = (event: any) => {
-        const newTranscript = Array.from(event.results)
-          .map((result: any) => result[0])
-          .map((result: any) => result.transcript)
-          .join('');
-        currentTranscriptRef.current = newTranscript;
-        onSpeechRecognized(currentTranscriptRef.current);
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-      };
-
-      recognition.start();
-      currentRecognitionRef.current = recognition; // Store the current recognition instance
-    } else {
-      console.warn('Speech Recognition not supported in this browser.');
-    }
 
     // Update analyser data in animation loop
     const updateVisualizer = () => {
@@ -102,13 +83,16 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onSpeechRecogn
 
   
     setIsRecording(false);
-    mediaRecorderRef.current?.stop();
-
-    // Stop speech recognition
-    if (currentRecognitionRef.current) {
-      currentRecognitionRef.current.stop();
-      currentRecognitionRef.current = null; // Clear the ref after stopping
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current?.mimeType });
+        onAudioCaptured(audioBlob);
+        audioChunksRef.current = [];
+      };
+      mediaRecorderRef.current.stop();
     }
+
+
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -132,9 +116,7 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onSpeechRecogn
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
-      if (currentRecognitionRef.current) {
-        currentRecognitionRef.current.stop();
-      }
+
     };
   }, []);
   const handleMouseDown = (e: React.MouseEvent) => {

@@ -5,16 +5,20 @@ export async function POST(request: NextRequest) {
 
     const requestData = await request.formData();
     const text_prompt = requestData.get('text_prompt');
+    const audio_file = requestData.get('audio_file');
 
-    if (!text_prompt) {
-      return NextResponse.json({ message: 'text_prompt is required' }, { status: 400 });
+    const formData = new FormData();
+
+    if (audio_file) {
+      formData.append('audio_file', audio_file);
+    } else if (text_prompt) {
+      formData.append('text_prompt', text_prompt);
+    } else {
+      return NextResponse.json({ message: 'Either text_prompt or audio_file is required' }, { status: 400 });
     }
 
     const externalApiUrl = `${process.env.NEXT_PUBLIC_EXTERNAL_API_BASE_URL}/generate-image`;
-
-    const formData = new FormData();
-    formData.append('text_prompt', text_prompt);
-
+    
     const response = await fetch(externalApiUrl, {
       method: 'POST',
       body: formData,
