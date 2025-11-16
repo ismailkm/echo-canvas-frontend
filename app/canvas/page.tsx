@@ -41,7 +41,7 @@ const CreationPage = () => {
       {/* Main Content Container */}
       <div className="flex flex-col items-center gap-8 w-full max-w-2xl">
         {/* Central Orb */}
-        <SpeakingOrb isTextFocused={isTextFocused} onAudioCaptured={handleAudioCaptured} />
+        <SpeakingOrb size="200" iconSize="w-12 h-12" isTextFocused={isTextFocused} onAudioCaptured={handleAudioCaptured} />
 
         <motion.textarea
           ref={textInputRef}

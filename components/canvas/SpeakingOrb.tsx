@@ -6,11 +6,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface SpeakingOrbProps {
   isTextFocused: boolean;
-
   onAudioCaptured: (blob: Blob) => void;
+  className?: string;
+  iconSize?: string;
+  size?: string; // Add size prop for flexibility
 }
 
-const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onAudioCaptured }) => {
+const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ 
+  isTextFocused, 
+  onAudioCaptured, 
+  className, 
+  iconSize,
+  size = '32' // Default size in pixels
+}) => {
   const [isRecording, setIsRecording] = useState(false);
   const [analyserData, setAnalyserData] = useState<Uint8Array | null>(null);
 
@@ -21,6 +29,9 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onAudioCapture
   const audioChunksRef = useRef<Blob[]>([]);
   const orbRef = useRef<HTMLDivElement>(null);
 
+  // Calculate dynamic values based on size
+  const orbSize = `${size}px`;
+  const iconSizeValue = iconSize || `w-${Number(size) / 2} h-${Number(size) / 2}`;
 
   // Initialize audio context and analyser
   const initializeAudio = async () => {
@@ -63,8 +74,6 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onAudioCapture
     setIsRecording(true);
     mediaRecorderRef.current?.start();
 
-
-
     // Update analyser data in animation loop
     const updateVisualizer = () => {
       if (!analyserRef.current) return;
@@ -81,7 +90,6 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onAudioCapture
   const handleOrbRelease = () => {
     if (!isRecording) return;
 
-  
     setIsRecording(false);
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.onstop = () => {
@@ -91,8 +99,6 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onAudioCapture
       };
       mediaRecorderRef.current.stop();
     }
-
-
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -116,9 +122,9 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onAudioCapture
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
-
     };
   }, []);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isTextFocused) {
       e.preventDefault();
@@ -140,9 +146,6 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onAudioCapture
   const handleTouchEnd = () => {
     handleOrbRelease();
   };
-
-  // Mouse/Touch events for orb
-
 
   // Calculate ripple dimensions based on frequency data
   const getRippleScale = () => {
@@ -166,7 +169,8 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onAudioCapture
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: isTextFocused ? 0.5 : 1 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
-      className="relative w-32 h-32 md:w-40 md:h-40"
+      className={`relative ${className || ''}`}
+      style={{ width: orbSize, height: orbSize }}
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
@@ -192,11 +196,11 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onAudioCapture
           animate={{ opacity: isRecording ? 0 : 1 }}
           transition={{ duration: 0.3 }}
         >
-          <Mic className="w-16 h-16 md:w-20 md:h-20 text-[#EAEAEA]" aria-hidden="true" />
+          <Mic className={iconSizeValue} style={{ color: '#EAEAEA' }} aria-hidden="true" />
         </motion.div>
       </motion.div>
 
-      {/* Visualizer ripples */}
+      {/* Visualizer ripples - FIXED POSITIONING */}
       <AnimatePresence>
         {isRecording && (
           <>
@@ -209,8 +213,8 @@ const SpeakingOrb: React.FC<SpeakingOrbProps> = ({ isTextFocused, onAudioCapture
                   borderColor: getRippleColor(),
                   width: '120%',
                   height: '120%',
-                  top: -15,
-                  left: -15,
+                  top: '-10%',
+                  left: '-10%',
                   transform: 'translate(-50%, -50%)',
                 }}
                 animate={{

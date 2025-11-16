@@ -6,19 +6,25 @@ export async function POST(request: NextRequest) {
 
     const sessionId = requestData.get('sessionId');
     const text_instruction = requestData.get('text_instruction');
+    const audio_file = requestData.get('audio_file');
 
     if (!sessionId) {
       return NextResponse.json({ message: 'sessionId is required' }, { status: 400 });
     }
-    if (!text_instruction) {
-      return NextResponse.json({ message: 'text_instruction is required' }, { status: 400 });
+    if (!text_instruction && !audio_file) {
+      return NextResponse.json({ message: 'Either text_instruction or audio_file is required' }, { status: 400 });
     }
 
     const externalApiUrl = `${process.env.NEXT_PUBLIC_EXTERNAL_API_BASE_URL}/update-image`;
 
     const formData = new FormData();
     formData.append('sessionId', sessionId);
-    formData.append('text_instruction', text_instruction);
+
+    if (audio_file) {
+      formData.append('audio_file', audio_file);
+    } else if (text_instruction) {
+      formData.append('text_instruction', text_instruction);
+    }
 
     const response = await fetch(externalApiUrl, {
       method: 'POST',

@@ -45,10 +45,17 @@ export async function describeImage(imageUrl: string): Promise<{ description: st
   return data;
 }
 
-export async function updateImage(sessionId: string, text_instruction: string): Promise<Session> {
+export async function updateImage(sessionId: string, input: { text_instruction?: string; audioBlob?: Blob }): Promise<Session> {
   const formData = new FormData();
   formData.append('sessionId', sessionId);
-  formData.append('text_instruction', text_instruction);
+
+  if (input.audioBlob) {
+    formData.append('audio_file', input.audioBlob, 'audio.webm');
+  } else if (input.text_instruction) {
+    formData.append('text_instruction', input.text_instruction);
+  } else {
+    throw new Error('Either text_instruction or audioBlob must be provided');
+  }
 
   const response = await fetch('/api/update-image', {
     method: 'POST',
@@ -65,11 +72,18 @@ export async function updateImage(sessionId: string, text_instruction: string): 
   return sessionData;
 }
 
-export async function refineImage(sessionId: string, imageUrl: string, text_instruction: string): Promise<Session> {
+export async function refineImage(sessionId: string, imageUrl: string, input: { text_instruction?: string; audioBlob?: Blob }): Promise<Session> {
   const formData = new FormData();
   formData.append('sessionId', sessionId);
   formData.append('imageUrl', imageUrl);
-  formData.append('text_instruction', text_instruction);
+
+  if (input.audioBlob) {
+    formData.append('audio_file', input.audioBlob, 'audio.webm');
+  } else if (input.text_instruction) {
+    formData.append('text_instruction', input.text_instruction);
+  } else {
+    throw new Error('Either text_instruction or audioBlob must be provided');
+  }
 
   const response = await fetch('/api/refine-image', {
     method: 'POST',

@@ -1,16 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mic, Check, X, Loader2 } from 'lucide-react';
+import { Check, X, Loader2 } from 'lucide-react';
 import ActionButton from '@/components/common/ActionButton';
+import SpeakingOrb from '@/components/canvas/SpeakingOrb';
 
 interface InstructionModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   instructionText: string;
-  onSubmit: (instruction: string) => void;
+  onSubmit: (instruction: string, audioBlob?: Blob) => void;
   isLoading?: boolean;
 }
 
@@ -23,33 +24,20 @@ const InstructionModal: React.FC<InstructionModalProps> = ({
   isLoading = false,
 }) => {
   const [instruction, setInstruction] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState('');
+  const [audioBlob, setAudioBlob] = useState<Blob | undefined>(undefined);
 
-  useEffect(() => {
-    if (transcript) {
-      setInstruction((prev) => (prev ? `${prev} ${transcript}` : transcript));
-      setTranscript('');
-    }
-  }, [transcript]);
-
-  const handleMicClick = () => {
-    if (isRecording) {
-      setIsRecording(false);
-      // Simulate transcription
-      setTimeout(() => {
-        setTranscript('Simulated voice input: Make it more vibrant and add a touch of gold.');
-      }, 1000);
-    } else {
-      setIsRecording(true);
-      setInstruction(''); // Clear previous instruction when starting new recording
-    }
-  };
 
   const handleSubmit = () => {
-    onSubmit(instruction);
+    onSubmit(instruction, audioBlob);
     setInstruction('');
+    setAudioBlob(undefined);
+  };
 
+  const handleAudioCaptured = (blob: Blob) => {
+    console.log('Audio captured in InstructionModal:', blob);
+    onSubmit(instruction, blob);
+    setInstruction('');
+    setAudioBlob(undefined);
   };
 
   if (!isOpen) return null;
@@ -90,29 +78,10 @@ const InstructionModal: React.FC<InstructionModalProps> = ({
               onChange={(e) => setInstruction(e.target.value)}
             ></textarea>
 
-            {isRecording && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center justify-center mb-4 text-[#A3B18A]"
-              >
-                <span className="mr-2">Recording...</span>
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                  className="w-3 h-3 bg-[#A3B18A] rounded-full"
-                />
-              </motion.div>
-            )}
-
             <div className="flex justify-between items-center">
-              <ActionButton
-                onClick={handleMicClick}
-                icon={Mic}
-                label=""
-                className={`p-3 rounded-full transition-colors ${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-[#A3B18A] hover:bg-[#B3C19A]'}`}
-              />
+              
+                <SpeakingOrb isTextFocused={false} onAudioCaptured={handleAudioCaptured}  size="60" iconSize="w-6 h-6" />
+            
               <div className="flex gap-4">
                 <ActionButton
                   onClick={onClose}

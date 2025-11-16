@@ -80,14 +80,14 @@ function StudioContent() {
     setIsRefineModalOpen(false);
   };
 
-  const handleReimagineSubmit = async (instruction: string) => {
+  const handleReimagineSubmit = async (instruction: string, audioBlob?: Blob) => {
     if (!session?.id) {
       alert('Session not found.');
       return;
     }
     setIsReimagining(true);
     try {
-      const newSession = await updateImage(session.id, instruction);
+      const newSession = await updateImage(session.id, { text_instruction: instruction, audioBlob });
       const { transformedVersions, initialSelectedVersion } = processSessionData(newSession);
       setSession(newSession);
       setVersions(transformedVersions);
@@ -100,7 +100,7 @@ function StudioContent() {
     }
   };
 
-  const handleRefineSubmit = async (instruction: string) => {
+  const handleRefineSubmit = async (instruction: string, audioBlob?: Blob) => {
     if (!session?.id) {
       alert('Session not found.');
       return;
@@ -111,7 +111,7 @@ function StudioContent() {
     }
     setIsRefining(true);
     try {
-      const newSession = await refineImage(session.id, selectedVersion.gcs_uri, instruction);
+      const newSession = await refineImage(session.id, selectedVersion.gcs_uri, { text_instruction: instruction, audioBlob });
       const { transformedVersions, initialSelectedVersion } = processSessionData(newSession);
       setSession(newSession);
       setVersions(transformedVersions);
@@ -124,6 +124,7 @@ function StudioContent() {
     }
   };
 
+  
   useEffect(() => {
     console.log('StudioPage useEffect - Running fetchData');
     
@@ -175,6 +176,7 @@ function StudioContent() {
 
     fetchData();
   }, [initialTextPrompt, audioBlob, router, clearAudioBlob]);
+
 
   if (!session || !selectedVersion || versions.length === 0) {
     return (

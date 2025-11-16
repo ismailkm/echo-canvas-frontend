@@ -1,11 +1,18 @@
 import { NextResponse, NextRequest } from 'next/server';
 
 export async function GET(
-  request: NextRequest
+  _request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
-  const body = await request.json();
-  const { id } = body;
+  const { id } = await context.params;
+  console.log('Session ID:', id);
 
+  if (!id) {
+    return NextResponse.json(
+      { message: 'Session ID is required' },
+      { status: 400 }
+    );
+  }
   const externalApiUrl = `${process.env.NEXT_PUBLIC_EXTERNAL_API_BASE_URL}/sessions/${id}`;
 
   try {
