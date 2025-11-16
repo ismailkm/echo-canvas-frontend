@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import SpeakingOrb from '@/components/canvas/SpeakingOrb';
 import { useRouter } from 'next/navigation';
 import { useAudioStore } from '@/lib/stores/audioStore';
@@ -17,6 +17,7 @@ const CreationPage = () => {
 
   const handleAudioCaptured = (blob: Blob) => {
     setAudioBlob(blob);
+    sessionStorage.setItem('fromCanvas', 'true');
     router.push('/studio');
   };
 
@@ -60,6 +61,7 @@ const CreationPage = () => {
         {textInput.trim() ? (
           <motion.button
             onClick={() => {
+              sessionStorage.setItem('fromCanvas', 'true');
               router.push(`/studio?text_prompt=${encodeURIComponent(textInput)}`);
             }}
             initial={{ opacity: 0, y: 20 }}

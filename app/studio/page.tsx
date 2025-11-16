@@ -7,7 +7,6 @@ import { Version, Session } from '@/types/sessions';
 import MetadataDisplay from '@/components/studio/MetadataDisplay';
 import Loader from '@/components/common/Loader';
 import { describeImage, updateImage, refineImage, generateImage } from '@/services/images';
-import { getSession } from '@/services/sessions';
 import { processSessionData } from '@/utils/session';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAudioStore } from '@/lib/stores/audioStore';
