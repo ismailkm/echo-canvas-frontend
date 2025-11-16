@@ -1,0 +1,46 @@
+@reference 'tailwindcss';
+
+@import "tailwindcss/preflight";
+@tailwind utilities;
+
+@layer base {
+  /* Headings use Inter (medium weight for softness + clarity) */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-inter);
+    font-weight: 500;
+  }
+
+  /* Body uses Source Sans with generous sizing and line spacing */
+  body {
+    font-family: var(--font-source-sans);
+    font-size: 18px;
+    line-height: 1.6;
+  }
+
+  p {
+    font-family: var(--font-source-sans);
+    font-size: 18px;
+    line-height: 1.6;
+  }
+
+  /* Smooth, calming base transitions */
+  * {
+    /* Use explicit CSS so tooling that doesn't understand @apply won't error */
+    transition-property: color;
+    transition-duration: 300ms;
+    transition-timing-function: ease-in-out;
+  }
+
+  /* Reduce motion by default for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}
